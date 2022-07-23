@@ -23,10 +23,16 @@ variable "ssh_user" {
   default = "azureuser"
 }
 
-variable "vm_size" {
+/*variable "vm_size" {
   type=string
   description="Tamaño de la máquina virtual"
-  default="Standard_D1_v2" # GB, CPUs
+  default="Standard_D2_v2" # GB, CPUs
+}*/
+
+variable "vm_sizes" {
+  description="Tamaño de la máquina virtual"
+  type=list(string)
+  default = [ "Standard_D2s_v3", "Standard_A2_v2", "Standard_A2_v2" ]
 }
 
 variable "vms" {

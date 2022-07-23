@@ -24,19 +24,20 @@ resource "azurerm_network_interface" "myNic" {
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
+    #count = length(var.vms)
     name                          = "ipconfig-${var.vms[count.index]}"
     subnet_id                     = azurerm_subnet.mySubnet.id
-    private_ip_address_allocation = "Dynamic" #"Static"
-    #private_ip_address = "10.0.1.${count.index + 10}"
-    public_ip_address_id = azurerm_public_ip.myPublicIp1[count.index].id
+    private_ip_address_allocation = "Static" #"Dynamic" #"Static"
+    private_ip_address = "10.0.2.${10+count.index}"
+    public_ip_address_id = azurerm_public_ip.myPublicIp[count.index].id
   }
 }
 
 
 
-resource "azurerm_public_ip" "myPublicIp1" {
+resource "azurerm_public_ip" "myPublicIp" {
   count = length(var.vms)
-  name="vmip1-${var.vms[count.index]}"
+  name="vmip-${var.vms[count.index]}"
   location=azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method = "Dynamic"
@@ -77,11 +78,11 @@ resource "azurerm_network_interface_security_group_association" "mySecGroupAssoc
 
 resource "azurerm_linux_virtual_machine" "vm" {
   count = length(var.vms)
-  name                = "vm2-${var.vms[count.index]}"
+  name                = "vm-${var.vms[count.index]}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = var.vm_size #"Standard_F2"
-  admin_username      = "azureuser"
+  size                = var.vm_sizes[count.index] #var.vm_size #"Standard_F2"
+  admin_username      = var.ssh_user #"azureuser"
   network_interface_ids = [
     azurerm_network_interface.myNic[count.index].id,
   ]
