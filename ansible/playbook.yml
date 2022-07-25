@@ -1,0 +1,54 @@
+---
+- name: 'Master'
+  gather_facts: true
+  hosts: all
+  remote_user: admin
+  become: true
+  tasks:
+    - name: 'Habilitar transparent masquerading'
+      shell:
+        cmd: '{{item}}'
+        #register: masquerading
+        #debug:
+        #msg: '{{masquerading..stdout_lines}}'
+      with_items:
+        - 'modprobe br_netfilter'
+        - 'firewall-cmd --add-masquerade --permanent'
+        - 'firewall-cmd --reload'
+        - 'bash -c "cat <<EOF >  /etc/sysctl.d/k8s.conf
+           > net.bridge.bridge-nf-call-ip6tables=1
+           > net.bridge.bridge-nf-call-iptables=1
+           > net.ipv4.ip_forward=1
+           > EOF"'
+        - 'sysctl --system'
+
+    - name: 'Desactivar la particion de swap'
+      shell:
+        cmd: '{{item}}'
+      with_items:
+        - 'swapoff -a'
+        - 'sed -i "/swap/d" /etc/fstab'
+
+    - name: 'Preparar instalacion de CRI-O como runtime en CentOS Stream 8'
+      shell:
+         cmd: '{{item}}'
+      with_items:
+        - 'VERSION=1.24'
+        - 'OS=CentOS_8_Stream'
+        - 'curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/devel:kubic:libcontainers:stable.repo'
+        - 'curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/devel:kubic:libcontainers:stable:cri-o:$VERSION.repo'
+
+    - name: Update dnf
+      shell:
+        cmd: '{{item}}'
+      with_items:
+        - 'dnf clean expire-cache'
+        - 'dnf upgrade'
+
+    - name: 'Instalar CRI-O'
+      dnf:
+        name: '{{packages}}'
+        state: present
+      vars:
+        packages:
+          - cri-o
